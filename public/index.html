@@ -1,204 +1,142 @@
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
+  <meta charset="UTF-8">
+  <title>Firebase Book App</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
 
-     <!--Import Google Icon Font-->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <!-- Compiled and minified CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-    <!--Let browser know website is optimized for mobile-->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Home</title>
+  <nav class="blue">
+    <div class="nav-wrapper container">
+      <a class="brand-logo">BookApp</a>
+      <ul id="nav-mobile" class="right">
+        <span id="user" class="white-text"></span>
+        <a id="loginBtn" class="btn white blue-text">Login</a>
+        <a id="logoutBtn" class="btn white blue-text" style="display:none;">Logout</a>
+      </ul>
+    </div>
+  </nav>
 
-    <style>
-      *{
-        box-sizing: border-box;  
-      }
+  <div class="container" style="margin-top:20px;">
 
-      html{
-        height: 100vh;
-        width: 100vw;
-        margin:0;
-        padding:0;
-      }
-
-      body{
-        margin:0;
-        padding:0;
-        height: 100%;
-        width: 100%;
-      }
-
-    </style>
-
-  </head>
-  <body>
-    <nav class="purple">
-      <div class="nav-wrapper" style="padding-left: 20px; padding-right: 20px;">
-        <a href="#" class="brand-logo">Home <span id="user"></span></a>
-        <ul class="right">
-          <li>
-            <button class="btn waves-effect waves-light" id="logoutBtn" style="display: none">
-              Logout
-            </button>
-          </li>
-          <li>
-            <button class="btn waves-effect waves-light" id="loginBtn" >
-              Login
-            </button>
-          </li>
-        </ul>
-       
-      </div>
-    </nav>
+    <div class="row" id="bookList"></div>
 
     <div class="row">
-
-      
-      <section class="col s12 m4 push-m8">
-                
-          <div class="row">
-            <div class="col s10">
-              <form id="reviewForm">
-
-                <h1 style="font-size: 1.5em">Selected: <span id="selectedName"></span></h1>
-  
-                <input type="hidden" id="selectedBook" name="isbn" value="null">
-                <div class="input-field">
-                    <textarea id="text" name="text" class="materialize-textarea"></textarea>
-                    <label for="text">Textarea</label>
-                </div>
-  
-                <div class="row">
-                    <div class="input-field col s4 right">
-                    <button class="btn waves-effect waves-light purple" id="reviewBtn"  type="submit">
-                        Submit
-                    </button>
-                    </div>  
-                </div>
-              </form>
-            </div>
-          </div>
-
-          <div class="row hide-on-small-only" style="height: 40vh; overflow-y: scroll;">
-                <ul class="collection" id="reviews">
-                  
-                </ul>
-          </div>
-      
-      </section>
-
-      <section class="col s12 m8 pull-m4" style="overflow-y:scroll; height: 86vh; margin-top: 10px;">
-        <div class="row" id="books">
-           
+      <h5 id="selectedName">No book selected</h5>
+      <form id="reviewForm">
+        <input type="hidden" id="selectedBook" name="isbn" value="null">
+        <div class="input-field">
+          <textarea id="text" name="text" class="materialize-textarea" required></textarea>
+          <label for="text">Write a Review</label>
         </div>
-      </section>
-
-
+        <button type="submit" class="btn blue waves-effect waves-light">Submit Review</button>
+      </form>
     </div>
 
-    <script type="module">
-      import { signIn, logout, auth, setAuthListeners } from './auth.js';
-      import { getBooks, getReviews, createReview, deleteReview } from './data.js';
+    <div class="row" id="reviewList"></div>
 
-      let loginBtn = document.querySelector('#loginBtn');
-      let logoutBtn = document.querySelector('#logoutBtn');
-      let reviewForm = document.querySelector('#reviewForm');
+  </div>
 
-      function setLoggedInUI(){
-          M.toast({html: 'Logged In!'})
-          document.querySelector('#user').innerHTML = `Signed in Anonymously`;
-          document.querySelector('#loginBtn').style.display = 'none';
-          document.querySelector('#logoutBtn').style.display = 'inline-block';
-      }
+  <script type="module">
+    import { signIn, logout, auth, setAuthListeners } from './auth.js';
+    import { getBooks, getReviews, createReview, deleteReview } from './data.js';
 
-      function setLoggedOutUI(){
-          M.toast({html: 'Logged Out!'})
-          document.querySelector('#user').innerHTML = '';
-          document.querySelector('#loginBtn').style.display = 'inline-block';
-          document.querySelector('#logoutBtn').style.display = 'none';
-      }
+    let loginBtn = document.querySelector('#loginBtn');
+    let logoutBtn = document.querySelector('#logoutBtn');
+    let reviewForm = document.querySelector('#reviewForm');
 
-      //attatch listeners
-      logoutBtn.addEventListener('click', logout);
-      loginBtn.addEventListener('click', signIn);
-      setAuthListeners(setLoggedInUI, setLoggedOutUI);
-
-      function renderReviews(reviews){
-        let reviewsList = document.querySelector('#reviews');
-        let html = '';
-        for (let review of reviews){
-            html += `
-                <li class="collection-item">
-                    <p>Review: ${review.text}</p>
-                    <p>Reviewer: ${review.reviewer}</p>
-                </li>`;
-        }
-        reviewsList.innerHTML = html;
-      }
-
-      function selectBook(isbn, name){
-          document.querySelector('#selectedName').innerHTML = name;
-          let selectedBook = document.querySelector('#selectedBook');
-          selectedBook.value = isbn;
-          getReviews(isbn, renderReviews);
-      }
-
-      window.selectBook = selectBook;
-
-reviewForm.addEventListener('submit', submitReivew);
-
-async function submitReivew(event){
-    event.preventDefault();
-    let form = event.target;
-    let formData = new FormData(form);
-    const { text, isbn } = Object.fromEntries(formData);
-    if(isbn === 'null'){
-        alert('Please select a book to review');
+    function setLoggedInUI() {
+      M.toast({ html: 'Logged In!' });
+      document.querySelector('#user').innerHTML = 'Signed in Anonymously';
+      loginBtn.style.display = 'none';
+      logoutBtn.style.display = 'inline-block';
     }
-    else if(auth.currentUser === null){
-        alert('Please login to review');
-    }else{
-      await createReview(auth, isbn, text);
-      M.toast({html: 'Review created!'});
-      form.reset();
+
+    function setLoggedOutUI() {
+      M.toast({ html: 'Logged Out!' });
+      document.querySelector('#user').innerHTML = '';
+      loginBtn.style.display = 'inline-block';
+      logoutBtn.style.display = 'none';
+    }
+
+    function renderBooks(books) {
+      let html = '';
+      books.forEach((book) => {
+        html += `
+          <div class="col s12 m4">
+            <div class="card">
+              <div class="card-image">
+                <img src="${book.cover}" alt="${book.title}">
+              </div>
+              <div class="card-content">
+                <span class="card-title">${book.title}</span>
+                <p>${book.author}</p>
+              </div>
+              <div class="card-action">
+                <a class="btn blue" onclick="window.selectBook('${book.isbn}', '${book.title}')">Reviews</a>
+              </div>
+            </div>
+          </div>`;
+      });
+      document.querySelector('#bookList').innerHTML = html;
+    }
+
+    function renderReviews(reviews) {
+      let html = '';
+      if (reviews.length === 0) {
+        html = '<p>No reviews yet. Be the first!</p>';
+      }
+      reviews.forEach((review) => {
+        html += `
+          <div class="card-panel">
+            <p>${review.text}</p>
+            <small>By: ${review.author}</small>
+            <a class="btn red btn-small right" onclick="window.removeReview('${review.id}', '${review.isbn}')">Delete</a>
+          </div>`;
+      });
+      document.querySelector('#reviewList').innerHTML = html;
+    }
+
+    window.selectBook = function(isbn, name) {
+      document.querySelector('#selectedName').innerHTML = name;
+      document.querySelector('#selectedBook').value = isbn;
       getReviews(isbn, renderReviews);
     }
-}
 
-      function renderBooks(books)
-      {
-        let booksArea = document.querySelector('#books');
-        let html = '';
-        for (let book of books){
-            html += `
-                <div class="col offset-s1 s10 m6 l4">
-                    <div class="card purple lighten-5">
-                        <div>
-                            <img src="${book.image}"  style="max-width:100%">
-                        </div>
-                        <div class="card-content">
-                            <span class="card-title">${book.title}</span>
-                            <p>${book.author}</p>
-                            <p>${book.year}</p>
-                            <p>${book.publisher}</p>
-                        </div>
-                    <div class="card-action">
-                      <button class="btn waves-effect" onclick="selectBook('${book.isbn}', '${book.title}')">
-                        Review
-                      </button>
-                    </div>
-                    </div>
-                </div>`;
-        }
-        booksArea.innerHTML = html;
+    window.removeReview = async function(id, isbn) {
+      await deleteReview(id);
+      getReviews(isbn, renderReviews);
+    }
+
+    async function submitReview(event) {
+      event.preventDefault();
+      let form = event.target;
+      let formData = new FormData(form);
+      const { text, isbn } = Object.fromEntries(formData);
+
+      if (isbn === 'null') {
+        alert('Please select a book to review');
+      } else if (auth.currentUser === null) {
+        alert('Please login to review');
+      } else {
+        await createReview(auth, isbn, text);
+        M.toast({ html: 'Review created!' });
+        form.reset();
+        getReviews(isbn, renderReviews);
       }
+    }
 
-      getBooks(renderBooks);
-      
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <script> M.AutoInit(); </script>
-  </body>
+    loginBtn.addEventListener('click', signIn);
+    logoutBtn.addEventListener('click', logout);
+    reviewForm.addEventListener('submit', submitReview);
+    setAuthListeners(setLoggedInUI, setLoggedOutUI);
+
+    // Load books on page load
+    getBooks().then(renderBooks);
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
 </html>
